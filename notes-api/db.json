@@ -1,0 +1,16 @@
+{
+  "notes": [
+    {
+      "id": "1",
+      "title": "First note",
+      "body": "Hello from json-server",
+      "updatedAtEpochMs": 1700000000000
+    },
+    {
+      "id": "2",
+      "title": "Second note",
+      "body": "Works with GET/POST/PUT/DELETE",
+      "updatedAtEpochMs": 1700000001000
+    }
+  ]
+}

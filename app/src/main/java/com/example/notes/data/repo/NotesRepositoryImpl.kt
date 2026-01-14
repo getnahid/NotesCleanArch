@@ -1,5 +1,6 @@
 package com.example.notes.data.repo
 
+import android.util.Log
 import com.example.notes.data.local.NotesDao
 import com.example.notes.data.mapper.toDomain
 import com.example.notes.data.mapper.toLocalDto
@@ -49,7 +50,8 @@ class NotesRepositoryImpl @Inject constructor(
             val remoteNotes = api.getNotes()
             val localDtos = remoteNotes.map { it.toLocalDto() }
             dao.replaceAll(localDtos)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.v("", e.toString());
             // Handle network error - could throw custom exception or log
             // For now, we silently fail and keep local data
         }

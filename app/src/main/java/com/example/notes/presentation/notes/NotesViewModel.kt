@@ -1,6 +1,7 @@
 
 package com.example.notes.presentation.notes
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.notes.domain.model.Note
@@ -61,6 +62,7 @@ class NotesViewModel @Inject constructor(
       try {
         refreshNotes()
       } catch (t: Throwable) {
+          Log.v("", t.toString())
         // No-op; for sample simplicity
       } finally {
         refreshing = false

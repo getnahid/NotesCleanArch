@@ -50,7 +50,7 @@ object AppModule {
     val json = Json { ignoreUnknownKeys = true }
     val contentType = "application/json".toMediaType()
     return Retrofit.Builder()
-      .baseUrl("https://example.com/")
+      .baseUrl("http://10.0.2.2:3000/") // Localhost for Android emulator
       .client(client)
       .addConverterFactory(json.asConverterFactory(contentType))
       .build()
