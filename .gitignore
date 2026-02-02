@@ -1,7 +1,20 @@
-# Built application files
+# Android
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
 *.apk
-*.ap_
 *.aab
+output.json
+
+# Built application files
+*.ap_
+*.dex
 
 # Files for the ART/Dalvik VM
 *.dex
@@ -43,20 +56,13 @@ captures/
 .idea/dictionaries
 .idea/libraries
 .idea/jarRepositories.xml
+# Android Studio 3 in .gitignore file.
 .idea/caches
 .idea/modules.xml
-.idea/.name
-.idea/compiler.xml
-.idea/misc.xml
-.idea/vcs.xml
-.idea/deploymentTargetDropDown.xml
-.idea/inspectionProfiles/
-.idea/encodings.xml
-.idea/kotlinc.xml
+# Comment next line if keeping position of elements in Navigation Editor is relevant for you
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
 *.jks
 *.keystore
 
@@ -65,10 +71,10 @@ captures/
 .cxx/
 
 # Google Services (e.g. APIs or Firebase)
-# google-services.json
+google-services.json
 
 # Freeline
-freeline.py
+freeline.zip
 freeline/
 freeline_project_description.json
 
@@ -87,39 +93,31 @@ lint/intermediates/
 lint/generated/
 lint/outputs/
 lint/tmp/
-# lint/reports/
 
 # Android Profiling
 *.hprof
 
-# Kotlin
-*.kotlin_module
-
-# Mac files
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# Signing files
-.signing/
+# Thumbnails
+._*
 
-# Backup files
-*.bak
-*~
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
 
-# APK Signing Block
-META-INF/
-
-# KSP
-app/build/generated/ksp/
-
-# Hilt
-app/build/generated/hilt/
-
-# Room schemas (optional - uncomment if you don't want to track DB schemas)
-# app/schemas/
-
-# Crashlytics
-com_crashlytics_export_strings.xml
-crashlytics.properties
-crashlytics-build.properties
-fabric.properties
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 

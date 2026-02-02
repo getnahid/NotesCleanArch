@@ -6,7 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface NotesRepository {
   fun observeNotes(): Flow<List<Note>>
+  fun observeNoteById(id: String): Flow<Note?>
   suspend fun upsert(note: Note)
   suspend fun delete(id: String)
   suspend fun refreshFromServer()
 }
+

@@ -12,6 +12,9 @@ interface NotesDao {
     @Query("SELECT * FROM notes ORDER BY updatedAtEpochMs DESC")
     fun observeNotes(): Flow<List<NoteDto>>
 
+    @Query("SELECT * FROM notes WHERE id = :id")
+    fun observeNoteById(id: String): Flow<NoteDto?>
+
     @Upsert
     suspend fun upsert(entity: NoteDto)
 

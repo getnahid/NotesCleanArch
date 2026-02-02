@@ -20,6 +20,9 @@ class NotesRepositoryImpl @Inject constructor(
     override fun observeNotes(): Flow<List<Note>> =
         dao.observeNotes().map { list -> list.map { it.toDomain() } }
 
+    override fun observeNoteById(id: String): Flow<Note?> =
+        dao.observeNoteById(id).map { it?.toDomain() }
+
     override suspend fun upsert(note: Note) {
         // Save to local database first
         dao.upsert(note.toLocalDto())

@@ -1,5 +1,6 @@
-package com.example.notes.presentation.notes
+package com.example.notes.presenter
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,9 +28,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun NotesScreen(
+    onNoteClick: (String) -> Unit = {},
     vm: NotesViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
@@ -64,7 +67,11 @@ fun NotesScreen(
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(state.notes, key = { it.id }) { note ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNoteClick(note.id) }
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -85,4 +92,10 @@ fun NotesScreen(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun show() {
+    NotesScreen()
 }

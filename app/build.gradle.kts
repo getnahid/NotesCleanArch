@@ -58,6 +58,7 @@ dependencies {
   implementation("androidx.compose.ui:ui-tooling-preview")
   debugImplementation("androidx.compose.ui:ui-tooling")
   implementation("androidx.compose.material3:material3")
+  implementation("androidx.navigation:navigation-compose:2.8.5")
 
   // Coroutines / Flow are part of Kotlin stdlib + kotlinx-coroutines
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
