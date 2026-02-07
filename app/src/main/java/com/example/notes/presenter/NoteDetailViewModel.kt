@@ -30,10 +30,10 @@ sealed interface NoteDetailIntent {
 /**
  * Side effects for the Note Detail screen (one-time events)
  */
-sealed interface NoteDetailState {
-    data class ShowError(val message: String) : NoteDetailState
-    data class ShowSnackbar(val message: String) : NoteDetailState
-    data object NavigateBack : NoteDetailState
+sealed interface NoteDetailEffect {
+    data class ShowError(val message: String) : NoteDetailEffect
+    data class ShowSnackbar(val message: String) : NoteDetailEffect
+    data object NavigateBack : NoteDetailEffect
 }
 
 /**
@@ -58,7 +58,7 @@ class NoteDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(NoteDetailUiState())
     val uiState: StateFlow<NoteDetailUiState> = _uiState.asStateFlow()
 
-    private val _effect = Channel<NoteDetailState>(Channel.BUFFERED)
+    private val _effect = Channel<NoteDetailEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
     init {
@@ -87,7 +87,7 @@ class NoteDetailViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }
-                _effect.send(NoteDetailState.ShowError("Failed to load note: ${e.message}"))
+                _effect.send(NoteDetailEffect.ShowError("Failed to load note: ${e.message}"))
             }
         }
     }
@@ -98,7 +98,7 @@ class NoteDetailViewModel @Inject constructor(
             try {
                 val currentNote = _uiState.value.note
                 if (currentNote == null) {
-                    _effect.send(NoteDetailState.ShowError("Note not found"))
+                    _effect.send(NoteDetailEffect.ShowError("Note not found"))
                     return@launch
                 }
 
@@ -108,9 +108,9 @@ class NoteDetailViewModel @Inject constructor(
                     updatedAtEpochMs = System.currentTimeMillis()
                 )
                 upsertNote(updatedNote)
-                _effect.send(NoteDetailState.ShowSnackbar("Note updated successfully"))
+                _effect.send(NoteDetailEffect.ShowSnackbar("Note updated successfully"))
             } catch (e: Exception) {
-                _effect.send(NoteDetailState.ShowError("Failed to update note: ${e.message}"))
+                _effect.send(NoteDetailEffect.ShowError("Failed to update note: ${e.message}"))
             } finally {
                 _uiState.update { it.copy(isSaving = false) }
             }
@@ -121,16 +121,16 @@ class NoteDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 deleteNote(noteId)
-                _effect.send(NoteDetailState.NavigateBack)
+                _effect.send(NoteDetailEffect.NavigateBack)
             } catch (e: Exception) {
-                _effect.send(NoteDetailState.ShowError("Failed to delete note: ${e.message}"))
+                _effect.send(NoteDetailEffect.ShowError("Failed to delete note: ${e.message}"))
             }
         }
     }
 
     private fun navigateBack() {
         viewModelScope.launch {
-            _effect.send(NoteDetailState.NavigateBack)
+            _effect.send(NoteDetailEffect.NavigateBack)
         }
     }
 }

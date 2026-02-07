@@ -57,13 +57,13 @@ fun NoteDetailScreen(
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
-                is NoteDetailState.ShowError -> {
+                is NoteDetailEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
-                is NoteDetailState.ShowSnackbar -> {
+                is NoteDetailEffect.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
-                is NoteDetailState.NavigateBack -> {
+                is NoteDetailEffect.NavigateBack -> {
                     onNavigateBack()
                 }
             }
