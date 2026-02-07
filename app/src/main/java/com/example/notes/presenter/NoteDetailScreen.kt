@@ -11,6 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,16 +23,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +43,6 @@ fun NoteDetailScreen(
     val state by vm.uiState.collectAsState()
     val note = state.note
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
@@ -53,73 +53,98 @@ fun NoteDetailScreen(
         body = note.body
     }
 
+    // Handle side effects
+    LaunchedEffect(Unit) {
+        vm.effect.collect { effect ->
+            when (effect) {
+                is NoteDetailState.ShowError -> {
+                    snackbarHostState.showSnackbar(effect.message)
+                }
+                is NoteDetailState.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(effect.message)
+                }
+                is NoteDetailState.NavigateBack -> {
+                    onNavigateBack()
+                }
+            }
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Edit Note") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { vm.handleIntent(NoteDetailIntent.NavigateBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        vm.updateNote(title, body)
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Note saved!")
-                        }
-                    }) {
+                    IconButton(
+                        onClick = { vm.handleIntent(NoteDetailIntent.UpdateNote(title, body)) },
+                        enabled = !state.isSaving
+                    ) {
                         Icon(Icons.Default.Check, "Save")
                     }
-                    IconButton(onClick = {
-                        vm.delete()
-                        onNavigateBack()
-                    }) {
+                    IconButton(onClick = { vm.handleIntent(NoteDetailIntent.DeleteNote) }) {
                         Icon(Icons.Default.Delete, "Delete")
                     }
                 }
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            TextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = MaterialTheme.typography.titleLarge
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextField(
-                value = body,
-                onValueChange = { body = it },
-                label = { Text("Note") },
+        if (state.isLoading) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                textStyle = MaterialTheme.typography.bodyLarge
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    vm.updateNote(title, body)
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Note saved successfully!")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+                    .fillMaxSize()
+                    .padding(padding),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Done")
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+            ) {
+                TextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.titleLarge,
+                    enabled = !state.isSaving
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextField(
+                    value = body,
+                    onValueChange = { body = it },
+                    label = { Text("Note") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                    enabled = !state.isSaving
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = { vm.handleIntent(NoteDetailIntent.UpdateNote(title, body)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !state.isSaving
+                ) {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.height(20.dp))
+                    } else {
+                        Text("Done")
+                    }
+                }
             }
         }
     }

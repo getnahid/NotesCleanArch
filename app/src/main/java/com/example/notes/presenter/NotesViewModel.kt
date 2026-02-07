@@ -11,12 +11,36 @@ import com.example.notes.domain.usecase.UpsertNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import java.util.UUID
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * User intents/actions for the Notes List screen
+ */
+sealed interface NotesIntent {
+    data object LoadNotes : NotesIntent
+    data object RefreshNotes : NotesIntent
+    data object AddSampleNote : NotesIntent
+    data class DeleteNote(val noteId: String) : NotesIntent
+    data class NavigateToDetail(val noteId: String) : NotesIntent
+}
+
+/**
+ * Side effects for the Notes List screen (one-time events)
+ */
+sealed interface NotesState {
+    data class ShowError(val message: String) : NotesState
+    data class NavigateToDetail(val noteId: String) : NotesState
+}
+
+/**
+ * UI state for the Notes List screen
+ */
 data class NotesUiState(
     val notes: List<Note> = emptyList(),
     val isRefreshing: Boolean = false,
@@ -25,47 +49,84 @@ data class NotesUiState(
 
 @HiltViewModel
 class NotesViewModel @Inject constructor(
-    observeNotes: ObserveNotesUseCase,
+    private val observeNotes: ObserveNotesUseCase,
     private val upsertNote: UpsertNoteUseCase,
     private val deleteNote: DeleteNoteUseCase,
     private val refreshNotes: RefreshNotesUseCase
 ) : ViewModel() {
 
-    private var refreshing = false
+    private val _uiState = MutableStateFlow(NotesUiState())
+    val uiState: StateFlow<NotesUiState> = _uiState.asStateFlow()
 
-    val uiState: StateFlow<NotesUiState> =
-        observeNotes()
-            .map { NotesUiState(notes = it, isRefreshing = refreshing) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NotesUiState())
+    private val _effect = Channel<NotesState>(Channel.BUFFERED)
+    val effect = _effect.receiveAsFlow()
 
-    fun addSampleNote() {
-        viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            val note = Note(
-                id = UUID.randomUUID().toString(),
-                title = "New note",
-                body = "Created at $now",
-                updatedAtEpochMs = now
-            )
-            upsertNote(note)
+    init {
+        handleIntent(NotesIntent.LoadNotes)
+    }
+
+    fun handleIntent(intent: NotesIntent) {
+        when (intent) {
+            is NotesIntent.LoadNotes -> loadNotes()
+            is NotesIntent.RefreshNotes -> refresh()
+            is NotesIntent.AddSampleNote -> addSampleNote()
+            is NotesIntent.DeleteNote -> delete(intent.noteId)
+            is NotesIntent.NavigateToDetail -> navigateToDetail(intent.noteId)
         }
     }
 
-    fun delete(id: String) {
-        viewModelScope.launch { deleteNote(id) }
+    private fun loadNotes() {
+        viewModelScope.launch {
+            observeNotes().collect { notes ->
+                _uiState.update { it.copy(notes = notes) }
+            }
+        }
     }
 
-    fun refresh() {
+    private fun addSampleNote() {
         viewModelScope.launch {
-            refreshing = true
+            try {
+                val now = System.currentTimeMillis()
+                val note = Note(
+                    id = UUID.randomUUID().toString(),
+                    title = "New note",
+                    body = "Created at $now",
+                    updatedAtEpochMs = now
+                )
+                upsertNote(note)
+            } catch (e: Exception) {
+                _effect.send(NotesState.ShowError("Failed to add note: ${e.message}"))
+            }
+        }
+    }
+
+    private fun delete(id: String) {
+        viewModelScope.launch {
+            try {
+                deleteNote(id)
+            } catch (e: Exception) {
+                _effect.send(NotesState.ShowError("Failed to delete note: ${e.message}"))
+            }
+        }
+    }
+
+    private fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
             try {
                 refreshNotes()
             } catch (t: Throwable) {
-                Log.v("", t.toString())
-                // No-op; for sample simplicity
+                Log.v("NotesViewModel", t.toString())
+                _effect.send(NotesState.ShowError("Failed to refresh: ${t.message}"))
             } finally {
-                refreshing = false
+                _uiState.update { it.copy(isRefreshing = false) }
             }
+        }
+    }
+
+    private fun navigateToDetail(noteId: String) {
+        viewModelScope.launch {
+            _effect.send(NotesState.NavigateToDetail(noteId))
         }
     }
 }

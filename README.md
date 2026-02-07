@@ -117,6 +117,7 @@ app/src/main/java/com/example/notes/
 │       ├── ObserveNotesUseCase.kt
 │       ├── UpsertNoteUseCase.kt
 │       ├── DeleteNoteUseCase.kt
+│       ├── GetNoteByIdUseCase.kt
 │       └── RefreshNotesUseCase.kt
 ├── data/                      # Data management layer
 │   ├── local/                # Local data source (Room)
@@ -131,10 +132,18 @@ app/src/main/java/com/example/notes/
 │   │   └── NoteMappers.kt
 │   └── repo/                 # Repository implementation
 │       └── NotesRepositoryImpl.kt
-├── presentation/              # UI layer
-│   └── notes/
-│       ├── NotesScreen.kt    # Compose UI
-│       └── NotesViewModel.kt # ViewModel
+├── presentation/              # UI layer (MVI Pattern)
+│   ├── NotesScreen.kt        # Notes list Compose UI
+│   ├── NotesViewModel.kt     # Notes list ViewModel (MVI)
+│   ├── NotesIntent.kt        # User intents for notes list
+│   ├── NotesEffect.kt        # Side effects for notes list
+│   ├── NoteDetailScreen.kt   # Note detail Compose UI
+│   ├── NoteDetailViewModel.kt # Note detail ViewModel (MVI)
+│   ├── NoteDetailIntent.kt   # User intents for note detail
+│   ├── NoteDetailEffect.kt   # Side effects for note detail
+│   ├── NotesAppRoot.kt       # Navigation root
+│   └── navigation/
+│       └── Screen.kt         # Navigation routes
 └── di/                        # Dependency Injection
     ├── AppModule.kt          # App-level dependencies
     └── UseCaseModule.kt      # Use case dependencies
