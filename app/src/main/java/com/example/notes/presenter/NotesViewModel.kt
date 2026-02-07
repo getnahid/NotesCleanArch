@@ -33,9 +33,9 @@ sealed interface NotesIntent {
 /**
  * Side effects for the Notes List screen (one-time events)
  */
-sealed interface NotesState {
-    data class ShowError(val message: String) : NotesState
-    data class NavigateToDetail(val noteId: String) : NotesState
+sealed interface NotesEffect {
+    data class ShowError(val message: String) : NotesEffect
+    data class NavigateToDetail(val noteId: String) : NotesEffect
 }
 
 /**
@@ -58,7 +58,7 @@ class NotesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(NotesUiState())
     val uiState: StateFlow<NotesUiState> = _uiState.asStateFlow()
 
-    private val _effect = Channel<NotesState>(Channel.BUFFERED)
+    private val _effect = Channel<NotesEffect>(Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
 
     init {
@@ -95,7 +95,7 @@ class NotesViewModel @Inject constructor(
                 )
                 upsertNote(note)
             } catch (e: Exception) {
-                _effect.send(NotesState.ShowError("Failed to add note: ${e.message}"))
+                _effect.send(NotesEffect.ShowError("Failed to add note: ${e.message}"))
             }
         }
     }
@@ -105,7 +105,7 @@ class NotesViewModel @Inject constructor(
             try {
                 deleteNote(id)
             } catch (e: Exception) {
-                _effect.send(NotesState.ShowError("Failed to delete note: ${e.message}"))
+                _effect.send(NotesEffect.ShowError("Failed to delete note: ${e.message}"))
             }
         }
     }
@@ -117,7 +117,7 @@ class NotesViewModel @Inject constructor(
                 refreshNotes()
             } catch (t: Throwable) {
                 Log.v("NotesViewModel", t.toString())
-                _effect.send(NotesState.ShowError("Failed to refresh: ${t.message}"))
+                _effect.send(NotesEffect.ShowError("Failed to refresh: ${t.message}"))
             } finally {
                 _uiState.update { it.copy(isRefreshing = false) }
             }
@@ -126,7 +126,7 @@ class NotesViewModel @Inject constructor(
 
     private fun navigateToDetail(noteId: String) {
         viewModelScope.launch {
-            _effect.send(NotesState.NavigateToDetail(noteId))
+            _effect.send(NotesEffect.NavigateToDetail(noteId))
         }
     }
 }

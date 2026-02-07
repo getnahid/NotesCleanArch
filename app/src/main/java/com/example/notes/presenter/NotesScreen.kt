@@ -46,10 +46,10 @@ fun NotesScreen(
     LaunchedEffect(Unit) {
         vm.effect.collect { effect ->
             when (effect) {
-                is NotesState.ShowError -> {
+                is NotesEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
-                is NotesState.NavigateToDetail -> {
+                is NotesEffect.NavigateToDetail -> {
                     onNoteClick(effect.noteId)
                 }
             }
