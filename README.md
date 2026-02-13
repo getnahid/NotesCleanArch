@@ -44,12 +44,20 @@ This project follows **Clean Architecture** with three distinct layers:
 
 ### 3. **Presentation Layer** (UI)
 - Android-specific UI components using Jetpack Compose
+- Follows **MVVM (Model-View-ViewModel)** pattern
 - **Location**: `presentation/`
 
 #### Components:
-- **`notes/`**: Notes screen feature
-  - `NotesScreen.kt`: Composable UI
-  - `NotesViewModel.kt`: ViewModel managing UI state
+- **`NotesScreen.kt`**: Notes list Composable UI
+- **`NotesViewModel.kt`**: ViewModel for notes list
+  - Exposes `StateFlow<NotesUiState>` for UI state
+  - Exposes `SharedFlow<NotesEvent>` for one-time events
+  - Provides public methods: `loadNotes()`, `addSampleNote()`, `deleteNote()`, `refreshNotes()`, `navigateToDetail()`
+- **`NoteDetailScreen.kt`**: Note detail Composable UI
+- **`NoteDetailViewModel.kt`**: ViewModel for note detail
+  - Exposes `StateFlow<NoteDetailUiState>` for UI state
+  - Exposes `SharedFlow<NoteDetailEvent>` for one-time events
+  - Provides public methods: `loadNote()`, `updateNote()`, `deleteNote()`, `navigateBack()`
 
 ## 🔄 Data Flow
 
@@ -132,15 +140,11 @@ app/src/main/java/com/example/notes/
 │   │   └── NoteMappers.kt
 │   └── repo/                 # Repository implementation
 │       └── NotesRepositoryImpl.kt
-├── presentation/              # UI layer (MVI Pattern)
+├── presentation/              # UI layer (MVVM Pattern)
 │   ├── NotesScreen.kt        # Notes list Compose UI
-│   ├── NotesViewModel.kt     # Notes list ViewModel (MVI)
-│   ├── NotesIntent.kt        # User intents for notes list
-│   ├── NotesEffect.kt        # Side effects for notes list
+│   ├── NotesViewModel.kt     # Notes list ViewModel (MVVM)
 │   ├── NoteDetailScreen.kt   # Note detail Compose UI
-│   ├── NoteDetailViewModel.kt # Note detail ViewModel (MVI)
-│   ├── NoteDetailIntent.kt   # User intents for note detail
-│   ├── NoteDetailEffect.kt   # Side effects for note detail
+│   ├── NoteDetailViewModel.kt # Note detail ViewModel (MVVM)
 │   ├── NotesAppRoot.kt       # Navigation root
 │   └── navigation/
 │       └── Screen.kt         # Navigation routes

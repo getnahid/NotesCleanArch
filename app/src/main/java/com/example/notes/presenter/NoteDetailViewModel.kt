@@ -8,32 +8,22 @@ import com.example.notes.domain.usecase.DeleteNoteUseCase
 import com.example.notes.domain.usecase.GetNoteByIdUseCase
 import com.example.notes.domain.usecase.UpsertNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * User intents/actions for the Note Detail screen
+ * One-time events for the Note Detail screen
  */
-sealed interface NoteDetailIntent {
-    data object LoadNote : NoteDetailIntent
-    data class UpdateNote(val title: String, val body: String) : NoteDetailIntent
-    data object DeleteNote : NoteDetailIntent
-    data object NavigateBack : NoteDetailIntent
-}
-
-/**
- * Side effects for the Note Detail screen (one-time events)
- */
-sealed interface NoteDetailEffect {
-    data class ShowError(val message: String) : NoteDetailEffect
-    data class ShowSnackbar(val message: String) : NoteDetailEffect
-    data object NavigateBack : NoteDetailEffect
+sealed interface NoteDetailEvent {
+    data class ShowError(val message: String) : NoteDetailEvent
+    data class ShowSnackbar(val message: String) : NoteDetailEvent
+    data object NavigateBack : NoteDetailEvent
 }
 
 /**
@@ -45,6 +35,12 @@ data class NoteDetailUiState(
     val isSaving: Boolean = false
 )
 
+/**
+ * MVVM ViewModel for Note Detail screen
+ *
+ * Exposes UI state via StateFlow and one-time events via SharedFlow
+ * Provides simple public methods for UI actions
+ */
 @HiltViewModel
 class NoteDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -55,26 +51,22 @@ class NoteDetailViewModel @Inject constructor(
 
     private val noteId: String = checkNotNull(savedStateHandle["noteId"])
 
+    // UI State exposed to the view
     private val _uiState = MutableStateFlow(NoteDetailUiState())
     val uiState: StateFlow<NoteDetailUiState> = _uiState.asStateFlow()
 
-    private val _effect = Channel<NoteDetailEffect>(Channel.BUFFERED)
-    val effect = _effect.receiveAsFlow()
+    // One-time events exposed to the view
+    private val _events = MutableSharedFlow<NoteDetailEvent>()
+    val events = _events.asSharedFlow()
 
     init {
-        handleIntent(NoteDetailIntent.LoadNote)
+        loadNote()
     }
 
-    fun handleIntent(intent: NoteDetailIntent) {
-        when (intent) {
-            is NoteDetailIntent.LoadNote -> loadNote()
-            is NoteDetailIntent.UpdateNote -> updateNote(intent.title, intent.body)
-            is NoteDetailIntent.DeleteNote -> delete()
-            is NoteDetailIntent.NavigateBack -> navigateBack()
-        }
-    }
-
-    private fun loadNote() {
+    /**
+     * Load note by ID and observe changes
+     */
+    fun loadNote() {
         viewModelScope.launch {
             try {
                 getNoteById(noteId).collect { note ->
@@ -87,18 +79,21 @@ class NoteDetailViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }
-                _effect.send(NoteDetailEffect.ShowError("Failed to load note: ${e.message}"))
+                _events.emit(NoteDetailEvent.ShowError("Failed to load note: ${e.message}"))
             }
         }
     }
 
-    private fun updateNote(title: String, body: String) {
+    /**
+     * Update the note with new title and body
+     */
+    fun updateNote(title: String, body: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             try {
                 val currentNote = _uiState.value.note
                 if (currentNote == null) {
-                    _effect.send(NoteDetailEffect.ShowError("Note not found"))
+                    _events.emit(NoteDetailEvent.ShowError("Note not found"))
                     return@launch
                 }
 
@@ -108,30 +103,35 @@ class NoteDetailViewModel @Inject constructor(
                     updatedAtEpochMs = System.currentTimeMillis()
                 )
                 upsertNote(updatedNote)
-                _effect.send(NoteDetailEffect.ShowSnackbar("Note updated successfully"))
+                _events.emit(NoteDetailEvent.ShowSnackbar("Note updated successfully"))
             } catch (e: Exception) {
-                _effect.send(NoteDetailEffect.ShowError("Failed to update note: ${e.message}"))
+                _events.emit(NoteDetailEvent.ShowError("Failed to update note: ${e.message}"))
             } finally {
                 _uiState.update { it.copy(isSaving = false) }
             }
         }
     }
 
-    private fun delete() {
+    /**
+     * Delete the current note
+     */
+    fun deleteNote() {
         viewModelScope.launch {
             try {
-                deleteNote(noteId)
-                _effect.send(NoteDetailEffect.NavigateBack)
+                deleteNote.invoke(noteId)
+                _events.emit(NoteDetailEvent.NavigateBack)
             } catch (e: Exception) {
-                _effect.send(NoteDetailEffect.ShowError("Failed to delete note: ${e.message}"))
+                _events.emit(NoteDetailEvent.ShowError("Failed to delete note: ${e.message}"))
             }
         }
     }
 
-    private fun navigateBack() {
+    /**
+     * Navigate back to previous screen
+     */
+    fun navigateBack() {
         viewModelScope.launch {
-            _effect.send(NoteDetailEffect.NavigateBack)
+            _events.emit(NoteDetailEvent.NavigateBack)
         }
     }
 }
-

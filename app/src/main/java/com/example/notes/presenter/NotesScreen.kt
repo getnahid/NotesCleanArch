@@ -42,15 +42,15 @@ fun NotesScreen(
     val state by vm.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Handle side effects
+    // Handle one-time events
     LaunchedEffect(Unit) {
-        vm.effect.collect { effect ->
-            when (effect) {
-                is NotesEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
+        vm.events.collect { event ->
+            when (event) {
+                is NotesEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(event.message)
                 }
-                is NotesEffect.NavigateToDetail -> {
-                    onNoteClick(effect.noteId)
+                is NotesEvent.NavigateToDetail -> {
+                    onNoteClick(event.noteId)
                 }
             }
         }
@@ -73,7 +73,7 @@ fun NotesScreen(
             ) {
                 Text("Notes", style = MaterialTheme.typography.headlineMedium)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { vm.handleIntent(NotesIntent.RefreshNotes) }) {
+                    IconButton(onClick = { vm.refreshNotes() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                     if (state.isRefreshing) {
@@ -83,7 +83,7 @@ fun NotesScreen(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { vm.handleIntent(NotesIntent.AddSampleNote) }) {
+                Button(onClick = { vm.addSampleNote() }) {
                     Text("Add sample")
                 }
             }
@@ -110,7 +110,7 @@ fun NotesScreen(
                                 Text(note.body, style = MaterialTheme.typography.bodyMedium)
                             }
                             IconButton(onClick = {
-                                vm.handleIntent(NotesIntent.DeleteNote(note.id))
+                                vm.deleteNote(note.id)
                             }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Delete")
                             }

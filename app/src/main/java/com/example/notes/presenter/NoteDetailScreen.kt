@@ -53,17 +53,17 @@ fun NoteDetailScreen(
         body = note.body
     }
 
-    // Handle side effects
+    // Handle one-time events
     LaunchedEffect(Unit) {
-        vm.effect.collect { effect ->
-            when (effect) {
-                is NoteDetailEffect.ShowError -> {
-                    snackbarHostState.showSnackbar(effect.message)
+        vm.events.collect { event ->
+            when (event) {
+                is NoteDetailEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(event.message)
                 }
-                is NoteDetailEffect.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(effect.message)
+                is NoteDetailEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
                 }
-                is NoteDetailEffect.NavigateBack -> {
+                is NoteDetailEvent.NavigateBack -> {
                     onNavigateBack()
                 }
             }
@@ -76,18 +76,18 @@ fun NoteDetailScreen(
             TopAppBar(
                 title = { Text("Edit Note") },
                 navigationIcon = {
-                    IconButton(onClick = { vm.handleIntent(NoteDetailIntent.NavigateBack) }) {
+                    IconButton(onClick = { vm.navigateBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
                 actions = {
                     IconButton(
-                        onClick = { vm.handleIntent(NoteDetailIntent.UpdateNote(title, body)) },
+                        onClick = { vm.updateNote(title, body) },
                         enabled = !state.isSaving
                     ) {
                         Icon(Icons.Default.Check, "Save")
                     }
-                    IconButton(onClick = { vm.handleIntent(NoteDetailIntent.DeleteNote) }) {
+                    IconButton(onClick = { vm.deleteNote() }) {
                         Icon(Icons.Default.Delete, "Delete")
                     }
                 }
@@ -135,7 +135,7 @@ fun NoteDetailScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    onClick = { vm.handleIntent(NoteDetailIntent.UpdateNote(title, body)) },
+                    onClick = { vm.updateNote(title, body) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !state.isSaving
                 ) {
