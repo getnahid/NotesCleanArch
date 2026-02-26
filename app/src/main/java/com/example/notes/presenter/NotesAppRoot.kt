@@ -28,13 +28,10 @@ fun NotesAppRoot() {
 
                 composable(Screen.NoteDetail.route) {
                     NoteDetailScreen(
-                        onNavigateBack = {
-                            navController.popBackStack()
-                        }
+                        onBack = { navController.popBackStack() }
                     )
                 }
             }
         }
     }
 }
-
