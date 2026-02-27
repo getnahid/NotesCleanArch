@@ -37,9 +37,10 @@ fun NoteDetailScreen(
         }
     }
 
-    LaunchedEffect(vm) {
-        vm.events.collect { event ->
-            if (event is NoteDetailEvent.NavigateBack) onBack()
+    LaunchedEffect(state.shouldNavigateBack) {
+        if (state.shouldNavigateBack) {
+            onBack()
+            vm.onNavigateBackHandled()
         }
     }
 
@@ -61,8 +62,7 @@ fun NoteDetailScreen(
             value = title,
             onValueChange = { title = it },
             label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isSaving
+            modifier = Modifier.fillMaxWidth()
         )
 
         TextField(
@@ -71,16 +71,14 @@ fun NoteDetailScreen(
             label = { Text("Note") },
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            enabled = !state.isSaving
+                .weight(1f)
         )
 
         Button(
             onClick = { vm.updateNote(title, body) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isSaving
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (state.isSaving) "Saving..." else "Save")
+            Text("Save")
         }
     }
 }

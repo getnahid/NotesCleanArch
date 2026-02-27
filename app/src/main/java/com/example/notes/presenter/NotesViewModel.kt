@@ -9,23 +9,13 @@ import com.example.notes.domain.usecase.ObserveNotesUseCase
 import com.example.notes.domain.usecase.RefreshNotesUseCase
 import com.example.notes.domain.usecase.UpsertNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import java.util.UUID
-import kotlinx.coroutines.flow.MutableSharedFlow
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-/**
- * One-time events for the Notes List screen
- */
-sealed interface NotesEvent {
-    data class ShowError(val message: String) : NotesEvent
-    data class NavigateToDetail(val noteId: String) : NotesEvent
-}
 
 /**
  * UI state for the Notes List screen
@@ -33,30 +23,20 @@ sealed interface NotesEvent {
 data class NotesUiState(
     val notes: List<Note> = emptyList(),
     val isRefreshing: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val navigateToNoteId: String? = null // one-time navigation signal
 )
 
-/**
- * MVVM ViewModel for Notes List screen
- *
- * Exposes UI state via StateFlow and one-time events via SharedFlow
- * Provides simple public methods for UI actions
- */
 @HiltViewModel
 class NotesViewModel @Inject constructor(
     private val observeNotes: ObserveNotesUseCase,
     private val upsertNote: UpsertNoteUseCase,
-    private val deleteNote: DeleteNoteUseCase,
-    private val refreshNotes: RefreshNotesUseCase
+    private val deleteNoteUseCase: DeleteNoteUseCase,
+    private val refreshNotesUseCase: RefreshNotesUseCase
 ) : ViewModel() {
 
-    // UI State exposed to the view
     private val _uiState = MutableStateFlow(NotesUiState())
     val uiState: StateFlow<NotesUiState> = _uiState.asStateFlow()
-
-    // One-time events exposed to the view
-    private val _events = MutableSharedFlow<NotesEvent>()
-    val events = _events.asSharedFlow()
 
     init {
         loadNotes()
@@ -88,7 +68,7 @@ class NotesViewModel @Inject constructor(
                 )
                 upsertNote(note)
             } catch (e: Exception) {
-                _events.emit(NotesEvent.ShowError("Failed to add note: ${e.message}"))
+                _uiState.update { it.copy(error = "Failed to add note: ${e.message}") }
             }
         }
     }
@@ -99,9 +79,9 @@ class NotesViewModel @Inject constructor(
     fun deleteNote(id: String) {
         viewModelScope.launch {
             try {
-                deleteNote.invoke(id)
+                deleteNoteUseCase.invoke(id)
             } catch (e: Exception) {
-                _events.emit(NotesEvent.ShowError("Failed to delete note: ${e.message}"))
+                _uiState.update { it.copy(error = "Failed to delete note: ${e.message}") }
             }
         }
     }
@@ -113,10 +93,10 @@ class NotesViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
             try {
-                refreshNotes.invoke()
+                refreshNotesUseCase.invoke()
             } catch (t: Throwable) {
                 Log.v("NotesViewModel", t.toString())
-                _events.emit(NotesEvent.ShowError("Failed to refresh: ${t.message}"))
+                _uiState.update { it.copy(error = "Failed to refresh: ${t.message}") }
             } finally {
                 _uiState.update { it.copy(isRefreshing = false) }
             }
@@ -124,11 +104,23 @@ class NotesViewModel @Inject constructor(
     }
 
     /**
-     * Navigate to note detail screen
+     * Navigate to note detail screen (one-time)
      */
     fun navigateToDetail(noteId: String) {
-        viewModelScope.launch {
-            _events.emit(NotesEvent.NavigateToDetail(noteId))
-        }
+        _uiState.update { it.copy(navigateToNoteId = noteId) }
+    }
+
+    /**
+     * Call this from UI after handling navigation
+     */
+    fun onNavigationHandled() {
+        _uiState.update { it.copy(navigateToNoteId = null) }
+    }
+
+    /**
+     * Call this from UI after showing the error (snackbar/dialog)
+     */
+    fun onErrorShown() {
+        _uiState.update { it.copy(error = null) }
     }
 }
