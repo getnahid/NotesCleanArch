@@ -16,10 +16,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,56 +36,75 @@ fun NotesScreen(
     vm: NotesViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text("Notes", style = MaterialTheme.typography.titleLarge)
-
-            IconButton(onClick = vm::refreshNotes) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+    LaunchedEffect(vm) {
+        vm.events.collect { event ->
+            when (event) {
+                is NotesUiEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
             }
         }
+    }
 
-        state.error?.let { errorMsg ->
-            Text(
-                text = errorMsg,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Notes", style = MaterialTheme.typography.titleLarge)
+
+                IconButton(onClick = vm::refreshNotes) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                }
+            }
+
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 8.dp)
-                    .clickable { vm.onErrorShown() } // tap to dismiss
-            )
-        }
+                    .padding(top = 12.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(onClick = vm::addSampleNote) {
+                    Text("Add")
+                }
 
-        Button(onClick = vm::addSampleNote) {
-            Text("Add")
-        }
-
-        LazyColumn {
-            items(state.notes, key = { it.id }) { note ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNoteClick(note.id) }
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                if (state.isLoading) {
                     Text(
-                        text = note.title,
-                        modifier = Modifier.weight(1f)
+                        text = "Refreshing…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.clickable { /* no-op */ }
                     )
+                }
+            }
 
-                    IconButton(onClick = { vm.deleteNote(note.id) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
+            LazyColumn {
+                items(state.notes, key = { it.id }) { note ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNoteClick(note.id) }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = note.title,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(onClick = { vm.deleteNote(note.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
                     }
                 }
             }

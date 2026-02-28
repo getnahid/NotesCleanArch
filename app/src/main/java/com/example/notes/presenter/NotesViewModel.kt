@@ -11,18 +11,28 @@ import com.example.notes.domain.usecase.UpsertNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/**
+ * One-time UI events for Notes screen (Snackbar, Navigation, etc.)
+ */
+sealed interface NotesUiEvent {
+    data class ShowError(val message: String) : NotesUiEvent
+}
 
 /**
  * UI state for the Notes List screen
  */
 data class NotesUiState(
     val notes: List<Note> = emptyList(),
-    val error: String? = null
+    val isLoading: Boolean = false
 )
 
 @HiltViewModel
@@ -35,6 +45,9 @@ class NotesViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(NotesUiState())
     val uiState: StateFlow<NotesUiState> = _uiState.asStateFlow()
+
+    private val _events = MutableSharedFlow<NotesUiEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<NotesUiEvent> = _events.asSharedFlow()
 
     init {
         loadNotes()
@@ -66,7 +79,9 @@ class NotesViewModel @Inject constructor(
                 )
                 upsertNote(note)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to add note: ${e.message}") }
+                _events.tryEmit(
+                    NotesUiEvent.ShowError("Failed to add note: ${e.message ?: "Unknown error"}")
+                )
             }
         }
     }
@@ -79,7 +94,9 @@ class NotesViewModel @Inject constructor(
             try {
                 deleteNoteUseCase.invoke(id)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to delete note: ${e.message}") }
+                _events.tryEmit(
+                    NotesUiEvent.ShowError("Failed to delete note: ${e.message ?: "Unknown error"}")
+                )
             }
         }
     }
@@ -89,19 +106,17 @@ class NotesViewModel @Inject constructor(
      */
     fun refreshNotes() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             try {
                 refreshNotesUseCase.invoke()
             } catch (t: Throwable) {
                 Log.v("NotesViewModel", t.toString())
-                _uiState.update { it.copy(error = "Failed to refresh: ${t.message}") }
+                _events.tryEmit(
+                    NotesUiEvent.ShowError("Failed to refresh: ${t.message ?: "Unknown error"}")
+                )
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
-    }
-
-    /**
-     * Call this from UI after showing the error (snackbar/dialog)
-     */
-    fun onErrorShown() {
-        _uiState.update { it.copy(error = null) }
     }
 }
