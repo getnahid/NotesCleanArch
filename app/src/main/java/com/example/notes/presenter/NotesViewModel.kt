@@ -22,9 +22,7 @@ import kotlinx.coroutines.launch
  */
 data class NotesUiState(
     val notes: List<Note> = emptyList(),
-    val isRefreshing: Boolean = false,
-    val error: String? = null,
-    val navigateToNoteId: String? = null // one-time navigation signal
+    val error: String? = null
 )
 
 @HiltViewModel
@@ -91,30 +89,13 @@ class NotesViewModel @Inject constructor(
      */
     fun refreshNotes() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true) }
             try {
                 refreshNotesUseCase.invoke()
             } catch (t: Throwable) {
                 Log.v("NotesViewModel", t.toString())
                 _uiState.update { it.copy(error = "Failed to refresh: ${t.message}") }
-            } finally {
-                _uiState.update { it.copy(isRefreshing = false) }
             }
         }
-    }
-
-    /**
-     * Navigate to note detail screen (one-time)
-     */
-    fun navigateToDetail(noteId: String) {
-        _uiState.update { it.copy(navigateToNoteId = noteId) }
-    }
-
-    /**
-     * Call this from UI after handling navigation
-     */
-    fun onNavigationHandled() {
-        _uiState.update { it.copy(navigateToNoteId = null) }
     }
 
     /**

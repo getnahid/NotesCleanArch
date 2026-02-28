@@ -69,9 +69,7 @@ fun NoteDetailScreen(
             value = body,
             onValueChange = { body = it },
             label = { Text("Note") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+            modifier = Modifier.fillMaxWidth()
         )
 
         Button(

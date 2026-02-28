@@ -49,6 +49,18 @@ fun NotesScreen(
             }
         }
 
+        state.error?.let { errorMsg ->
+            Text(
+                text = errorMsg,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp, bottom = 8.dp)
+                    .clickable { vm.onErrorShown() } // tap to dismiss
+            )
+        }
+
         Button(onClick = vm::addSampleNote) {
             Text("Add")
         }
