@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -26,9 +29,23 @@ fun NoteDetailScreen(
     vm: NoteDetailViewModel = hiltViewModel()
 ) {
     val state by vm.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
+
+    LaunchedEffect(vm) {
+        vm.events.collect { event ->
+            when (event) {
+                is NoteDetailUiEvent.ShowError -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                NoteDetailUiEvent.NavigateBack -> {
+                    onBack()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(state.note) {
         state.note?.let {
@@ -37,46 +54,44 @@ fun NoteDetailScreen(
         }
     }
 
-    LaunchedEffect(state.shouldNavigateBack) {
-        if (state.shouldNavigateBack) {
-            onBack()
-            vm.onNavigateBackHandled()
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Button(onClick = onBack) { Text("Back") }
-            Button(onClick = vm::deleteNote) { Text("Delete") }
-        }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(onClick = onBack) { Text("Back") }
+                Button(onClick = vm::deleteNote) { Text("Delete") }
+            }
 
-        TextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            TextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Title") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        TextField(
-            value = body,
-            onValueChange = { body = it },
-            label = { Text("Note") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            TextField(
+                value = body,
+                onValueChange = { body = it },
+                label = { Text("Note") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Button(
-            onClick = { vm.updateNote(title, body) },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Save")
+            Button(
+                onClick = { vm.updateNote(title, body) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Save")
+            }
         }
     }
 }

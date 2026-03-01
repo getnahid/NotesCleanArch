@@ -9,16 +9,26 @@ import com.example.notes.domain.usecase.GetNoteByIdUseCase
 import com.example.notes.domain.usecase.UpsertNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * One-time UI events for Note Detail screen
+ */
+sealed interface NoteDetailUiEvent {
+    data class ShowError(val message: String) : NoteDetailUiEvent
+    data object NavigateBack : NoteDetailUiEvent
+}
+
 data class NoteDetailUiState(
     val note: Note? = null,
-    val error: String? = null,
-    val shouldNavigateBack: Boolean = false
+    val isLoading: Boolean = true
 )
 
 @HiltViewModel
@@ -34,18 +44,25 @@ class NoteDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(NoteDetailUiState())
     val uiState: StateFlow<NoteDetailUiState> = _uiState.asStateFlow()
 
+    private val _events = MutableSharedFlow<NoteDetailUiEvent>(extraBufferCapacity = 1)
+    val events: SharedFlow<NoteDetailUiEvent> = _events.asSharedFlow()
+
     init {
         loadNote()
     }
 
     fun loadNote() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             try {
                 getNoteById(noteId).collect { note ->
-                    _uiState.update { it.copy(note = note) }
+                    _uiState.update { it.copy(note = note, isLoading = false) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to load note: ${e.message}") }
+                _uiState.update { it.copy(isLoading = false) }
+                _events.tryEmit(
+                    NoteDetailUiEvent.ShowError("Failed to load note: ${e.message ?: "Unknown error"}")
+                )
             }
         }
     }
@@ -55,7 +72,7 @@ class NoteDetailViewModel @Inject constructor(
             try {
                 val currentNote = _uiState.value.note
                 if (currentNote == null) {
-                    _uiState.update { it.copy(error = "Note not found") }
+                    _events.tryEmit(NoteDetailUiEvent.ShowError("Note not found"))
                     return@launch
                 }
 
@@ -66,7 +83,9 @@ class NoteDetailViewModel @Inject constructor(
                 )
                 upsertNote(updatedNote)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to update note: ${e.message}") }
+                _events.tryEmit(
+                    NoteDetailUiEvent.ShowError("Failed to update note: ${e.message ?: "Unknown error"}")
+                )
             }
         }
     }
@@ -75,18 +94,12 @@ class NoteDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 deleteNoteUseCase.invoke(noteId)
-                _uiState.update { it.copy(shouldNavigateBack = true) }
+                _events.tryEmit(NoteDetailUiEvent.NavigateBack)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to delete note: ${e.message}") }
+                _events.tryEmit(
+                    NoteDetailUiEvent.ShowError("Failed to delete note: ${e.message ?: "Unknown error"}")
+                )
             }
         }
-    }
-
-    fun onErrorShown() {
-        _uiState.update { it.copy(error = null) }
-    }
-
-    fun onNavigateBackHandled() {
-        _uiState.update { it.copy(shouldNavigateBack = false) }
     }
 }
