@@ -1,4 +1,3 @@
-
 package com.example.notes.di
 
 import android.content.Context
@@ -25,43 +24,43 @@ import retrofit2.Retrofit
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-  @Provides
-  @Singleton
-  fun provideDb(@ApplicationContext context: Context): AppDatabase =
-    Room.databaseBuilder(context, AppDatabase::class.java, "notes.db").build()
+    @Provides
+    @Singleton
+    fun provideDb(@ApplicationContext context: Context): AppDatabase =
+        Room.databaseBuilder(context, AppDatabase::class.java, "notes.db").build()
 
-  @Provides
-  fun provideDao(db: AppDatabase): NotesDao = db.notesDao()
+    @Provides
+    fun provideDao(db: AppDatabase): NotesDao = db.notesDao()
 
-  @Provides
-  @Singleton
-  fun provideOkHttp(): OkHttpClient {
-    val logger = HttpLoggingInterceptor().apply {
-      level = HttpLoggingInterceptor.Level.BASIC
+    @Provides
+    @Singleton
+    fun provideOkHttp(): OkHttpClient {
+        val logger = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BASIC
+        }
+        return OkHttpClient.Builder()
+            .addInterceptor(logger)
+            .build()
     }
-    return OkHttpClient.Builder()
-      .addInterceptor(logger)
-      .build()
-  }
 
-  @Provides
-  @Singleton
-  fun provideRetrofit(client: OkHttpClient): Retrofit {
-    val json = Json { ignoreUnknownKeys = true }
-    val contentType = "application/json".toMediaType()
-    return Retrofit.Builder()
-      .baseUrl("http://10.0.2.2:3000/") // Localhost for Android emulator
-      .client(client)
-      .addConverterFactory(json.asConverterFactory(contentType))
-      .build()
-  }
+    @Provides
+    @Singleton
+    fun provideRetrofit(client: OkHttpClient): Retrofit {
+        val json = Json { ignoreUnknownKeys = true }
+        val contentType = "application/json".toMediaType()
+        return Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:3000/") // Localhost for Android emulator
+            .client(client)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+    }
 
-  @Provides
-  fun provideApi(retrofit: Retrofit): NotesApi =
-    retrofit.create(NotesApi::class.java)
+    @Provides
+    fun provideApi(retrofit: Retrofit): NotesApi =
+        retrofit.create(NotesApi::class.java)
 
-  @Provides
-  @Singleton
-  fun provideRepo(dao: NotesDao, api: NotesApi): NotesRepository =
-    NotesRepositoryImpl(dao, api)
+    @Provides
+    @Singleton
+    fun provideRepo(dao: NotesDao, api: NotesApi): NotesRepository =
+        NotesRepositoryImpl(dao, api)
 }
