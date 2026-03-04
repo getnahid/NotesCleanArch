@@ -1,4 +1,4 @@
-package com.example.notes.data.remote.dto
+package com.example.notes.data.remote
 
 import kotlinx.serialization.Serializable
 
@@ -9,4 +9,3 @@ data class NoteRemoteDto(
     val body: String,
     val updatedAtEpochMs: Long
 )
-

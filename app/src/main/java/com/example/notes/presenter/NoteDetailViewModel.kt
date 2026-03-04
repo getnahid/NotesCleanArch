@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.notes.domain.model.Note
 import com.example.notes.domain.usecase.DeleteNoteUseCase
-import com.example.notes.domain.usecase.GetNoteByIdUseCase
+import com.example.notes.domain.usecase.ObserveNoteByIdUseCase
 import com.example.notes.domain.usecase.UpsertNoteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -34,7 +34,7 @@ data class NoteDetailUiState(
 @HiltViewModel
 class NoteDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val getNoteById: GetNoteByIdUseCase,
+    private val getNoteById: ObserveNoteByIdUseCase,
     private val upsertNote: UpsertNoteUseCase,
     private val deleteNoteUseCase: DeleteNoteUseCase
 ) : ViewModel() {
@@ -79,7 +79,7 @@ class NoteDetailViewModel @Inject constructor(
                 val updatedNote = currentNote.copy(
                     title = title,
                     body = body,
-                    updatedAtEpochMs = System.currentTimeMillis()
+                    updatedAtMs = System.currentTimeMillis()
                 )
                 upsertNote(updatedNote)
             } catch (e: Exception) {

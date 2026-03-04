@@ -75,7 +75,7 @@ class NotesViewModel @Inject constructor(
                     id = UUID.randomUUID().toString(),
                     title = "New note",
                     body = "Created at $now",
-                    updatedAtEpochMs = now
+                    updatedAtMs = now
                 )
                 upsertNote(note)
             } catch (e: Exception) {

@@ -1,6 +1,6 @@
 package com.example.notes.data.remote
 
-import com.example.notes.data.remote.dto.NoteRemoteDto
+import com.example.notes.data.remote.NoteRemoteDto
 import retrofit2.http.*
 
 interface NotesApi {

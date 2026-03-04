@@ -5,5 +5,5 @@ data class Note(
   val id: String,
   val title: String,
   val body: String,
-  val updatedAtEpochMs: Long
+  val updatedAtMs: Long
 )
