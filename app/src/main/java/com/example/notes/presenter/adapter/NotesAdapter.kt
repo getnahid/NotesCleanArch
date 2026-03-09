@@ -11,7 +11,7 @@ import com.example.notes.domain.model.Note
 class NotesAdapter(
     private val onNoteClick: (Note) -> Unit,
     private val onDeleteClick: (Note) -> Unit
-) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
+) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(Diff) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
         val binding = ItemNoteBinding.inflate(
@@ -44,7 +44,7 @@ class NotesAdapter(
         }
     }
 
-    private class NoteDiffCallback : DiffUtil.ItemCallback<Note>() {
+    private object Diff : DiffUtil.ItemCallback<Note>() {
         override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean {
             return oldItem.id == newItem.id
         }

@@ -92,7 +92,7 @@ class NotesViewModel @Inject constructor(
     fun deleteNote(id: String) {
         viewModelScope.launch {
             try {
-                deleteNoteUseCase.invoke(id)
+                deleteNoteUseCase(id)
             } catch (e: Exception) {
                 _events.tryEmit(
                     NotesUiEvent.ShowError("Failed to delete note: ${e.message ?: "Unknown error"}")
@@ -108,7 +108,7 @@ class NotesViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
-                refreshNotesUseCase.invoke()
+                refreshNotesUseCase()
             } catch (t: Throwable) {
                 Log.v("NotesViewModel", t.toString())
                 _events.tryEmit(
