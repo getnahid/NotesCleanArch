@@ -31,9 +31,6 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotesViewModelTest {
 
-    @get:Rule
-    val instantExecutorRule = InstantTaskExecutorRule()
-
     private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var observeNotesUseCase: ObserveNotesUseCase
@@ -80,51 +77,6 @@ class NotesViewModelTest {
     }
 
     @Test
-    fun givenViewModel_whenAddSampleNote_thenCallsUpsertUseCase() = runTest {
-        // Given
-        every { observeNotesUseCase() } returns flowOf(emptyList())
-        coEvery { upsertNoteUseCase(any()) } returns Unit
-        viewModel = NotesViewModel(
-            observeNotesUseCase,
-            upsertNoteUseCase,
-            deleteNoteUseCase,
-            refreshNotesUseCase
-        )
-        advanceUntilIdle()
-
-        // When
-        viewModel.addSampleNote()
-        advanceUntilIdle()
-
-        // Then
-        coVerify(exactly = 1) { upsertNoteUseCase(any()) }
-    }
-
-    @Test
-    fun givenUseCaseThrowsException_whenAddSampleNote_thenEmitsErrorEvent() = runTest {
-        // Given
-        every { observeNotesUseCase() } returns flowOf(emptyList())
-        coEvery { upsertNoteUseCase(any()) } throws RuntimeException("Error adding note")
-        viewModel = NotesViewModel(
-            observeNotesUseCase,
-            upsertNoteUseCase,
-            deleteNoteUseCase,
-            refreshNotesUseCase
-        )
-        advanceUntilIdle()
-
-        // When & Then
-        viewModel.events.test {
-            viewModel.addSampleNote()
-            advanceUntilIdle()
-
-            val event = awaitItem()
-            assertTrue(event is NotesUiEvent.ShowError)
-            assertTrue((event as NotesUiEvent.ShowError).message.contains("Failed to add note"))
-        }
-    }
-
-    @Test
     fun givenNoteId_whenDeleteNote_thenCallsDeleteUseCaseWithCorrectId() = runTest {
         // Given
         val noteId = "123"
@@ -168,6 +120,51 @@ class NotesViewModelTest {
             val event = awaitItem()
             assertTrue(event is NotesUiEvent.ShowError)
             assertTrue((event as NotesUiEvent.ShowError).message.contains("Failed to delete note"))
+        }
+    }
+
+    @Test
+    fun givenViewModel_whenAddSampleNote_thenCallsUpsertUseCase() = runTest {
+        // Given
+        every { observeNotesUseCase() } returns flowOf(emptyList())
+        coEvery { upsertNoteUseCase(any()) } returns Unit
+        viewModel = NotesViewModel(
+            observeNotesUseCase,
+            upsertNoteUseCase,
+            deleteNoteUseCase,
+            refreshNotesUseCase
+        )
+        advanceUntilIdle()
+
+        // When
+        viewModel.addSampleNote()
+        advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) { upsertNoteUseCase(any()) }
+    }
+
+    @Test
+    fun givenUseCaseThrowsException_whenAddSampleNote_thenEmitsErrorEvent() = runTest {
+        // Given
+        every { observeNotesUseCase() } returns flowOf(emptyList())
+        coEvery { upsertNoteUseCase(any()) } throws RuntimeException("Error adding note")
+        viewModel = NotesViewModel(
+            observeNotesUseCase,
+            upsertNoteUseCase,
+            deleteNoteUseCase,
+            refreshNotesUseCase
+        )
+        advanceUntilIdle()
+
+        // When & Then
+        viewModel.events.test {
+            viewModel.addSampleNote()
+            advanceUntilIdle()
+
+            val event = awaitItem()
+            assertTrue(event is NotesUiEvent.ShowError)
+            assertTrue((event as NotesUiEvent.ShowError).message.contains("Failed to add note"))
         }
     }
 

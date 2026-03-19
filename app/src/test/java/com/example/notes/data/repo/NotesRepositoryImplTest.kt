@@ -83,36 +83,6 @@ class NotesRepositoryImplTest {
     }
 
     @Test
-    fun givenNote_whenUpsert_thenSavesToLocalDaoAndSyncsWithRemoteApi() = runTest {
-        // Given
-        val note = Note("1", "Title", "Body", 123456789L)
-        coEvery { dao.upsert(any()) } returns Unit
-        coEvery { api.updateNote(any(), any()) } returns mockk()
-
-        // When
-        repository.upsert(note)
-
-        // Then
-        coVerify(exactly = 1) { dao.upsert(any()) }
-        coVerify(exactly = 1) { api.updateNote(note.id, any()) }
-    }
-
-    @Test
-    fun givenRemoteSyncFails_whenUpsert_thenStillSavesToLocalDao() = runTest {
-        // Given
-        val note = Note("1", "Title", "Body", 123456789L)
-        coEvery { dao.upsert(any()) } returns Unit
-        coEvery { api.updateNote(any(), any()) } throws RuntimeException("Network error")
-
-        // When
-        repository.upsert(note)
-
-        // Then
-        coVerify(exactly = 1) { dao.upsert(any()) }
-        coVerify(exactly = 1) { api.updateNote(note.id, any()) }
-    }
-
-    @Test
     fun givenNoteId_whenDelete_thenRemovesFromLocalDaoAndSyncsWithRemoteApi() = runTest {
         // Given
         val noteId = "123"
@@ -140,6 +110,36 @@ class NotesRepositoryImplTest {
         // Then
         coVerify(exactly = 1) { dao.delete(noteId) }
         coVerify(exactly = 1) { api.deleteNote(noteId) }
+    }
+
+    @Test
+    fun givenNote_whenUpsert_thenSavesToLocalDaoAndSyncsWithRemoteApi() = runTest {
+        // Given
+        val note = Note("1", "Title", "Body", 123456789L)
+        coEvery { dao.upsert(any()) } returns Unit
+        coEvery { api.updateNote(any(), any()) } returns mockk()
+
+        // When
+        repository.upsert(note)
+
+        // Then
+        coVerify(exactly = 1) { dao.upsert(any()) }
+        coVerify(exactly = 1) { api.updateNote(note.id, any()) }
+    }
+
+    @Test
+    fun givenRemoteSyncFails_whenUpsert_thenStillSavesToLocalDao() = runTest {
+        // Given
+        val note = Note("1", "Title", "Body", 123456789L)
+        coEvery { dao.upsert(any()) } returns Unit
+        coEvery { api.updateNote(any(), any()) } throws RuntimeException("Network error")
+
+        // When
+        repository.upsert(note)
+
+        // Then
+        coVerify(exactly = 1) { dao.upsert(any()) }
+        coVerify(exactly = 1) { api.updateNote(note.id, any()) }
     }
 
     @Test
