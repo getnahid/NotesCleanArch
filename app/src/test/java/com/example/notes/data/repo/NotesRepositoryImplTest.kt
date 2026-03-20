@@ -51,6 +51,36 @@ class NotesRepositoryImplTest {
     }
 
     @Test
+    fun givenNoteId_whenDelete_thenRemovesFromLocalDaoAndSyncsWithRemoteApi() = runTest {
+        // Given
+        val noteId = "123"
+        coEvery { dao.delete(noteId) } returns Unit
+        coEvery { api.deleteNote(noteId) } returns mockk()
+
+        // When
+        repository.delete(noteId)
+
+        // Then
+        coVerify(exactly = 1) { dao.delete(noteId) }
+        coVerify(exactly = 1) { api.deleteNote(noteId) }
+    }
+
+    @Test
+    fun givenRemoteSyncFails_whenDelete_thenStillRemovesFromLocalDao() = runTest {
+        // Given
+        val noteId = "123"
+        coEvery { dao.delete(noteId) } returns Unit
+        coEvery { api.deleteNote(noteId) } throws RuntimeException("Network error")
+
+        // When
+        repository.delete(noteId)
+
+        // Then
+        coVerify(exactly = 1) { dao.delete(noteId) }
+        coVerify(exactly = 1) { api.deleteNote(noteId) }
+    }
+
+    @Test
     fun givenNoteInDao_whenObserveNoteById_thenReturnsMappedNote() = runTest {
         // Given
         val noteId = "123"
@@ -80,36 +110,6 @@ class NotesRepositoryImplTest {
         assertEquals(1, result.size)
         assertEquals(null, result[0])
         verify(exactly = 1) { dao.observeNoteById(noteId) }
-    }
-
-    @Test
-    fun givenNoteId_whenDelete_thenRemovesFromLocalDaoAndSyncsWithRemoteApi() = runTest {
-        // Given
-        val noteId = "123"
-        coEvery { dao.delete(noteId) } returns Unit
-        coEvery { api.deleteNote(noteId) } returns mockk()
-
-        // When
-        repository.delete(noteId)
-
-        // Then
-        coVerify(exactly = 1) { dao.delete(noteId) }
-        coVerify(exactly = 1) { api.deleteNote(noteId) }
-    }
-
-    @Test
-    fun givenRemoteSyncFails_whenDelete_thenStillRemovesFromLocalDao() = runTest {
-        // Given
-        val noteId = "123"
-        coEvery { dao.delete(noteId) } returns Unit
-        coEvery { api.deleteNote(noteId) } throws RuntimeException("Network error")
-
-        // When
-        repository.delete(noteId)
-
-        // Then
-        coVerify(exactly = 1) { dao.delete(noteId) }
-        coVerify(exactly = 1) { api.deleteNote(noteId) }
     }
 
     @Test

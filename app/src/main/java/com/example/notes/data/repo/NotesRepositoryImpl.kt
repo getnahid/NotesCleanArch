@@ -27,12 +27,15 @@ class NotesRepositoryImpl @Inject constructor(
         // Save to local database first
         dao.upsert(note.toLocalDto())
 
-        // Try to sync with remote
+        // Try to sync with remote and surface errors to callers so UI can react
         try {
             api.updateNote(note.id, note.toRemoteDto())
-        } catch (_: Exception) {
-            // Handle sync error - could implement retry logic or queue for later sync
-            // For now, we just log and continue (offline-first approach)
+        } catch (e: Exception) {
+            // Keep the message in a variable for reuse (logging and throwing)
+            val errMsg = "Failed to sync note to server: ${e.message}"
+            Log.w("NotesRepository", errMsg, e)
+            // Rethrow a descriptive exception so ViewModel / UI can show an error and decide on retry
+            throw Exception(errMsg, e)
         }
     }
 
@@ -40,24 +43,27 @@ class NotesRepositoryImpl @Inject constructor(
         // Delete from local database first
         dao.delete(id)
 
-        // Try to sync with remote
+        // Try to sync with remote and surface errors to callers
         try {
             api.deleteNote(id)
-        } catch (_: Exception) {
-            // Handle sync error - could implement retry logic or queue for later sync
+        } catch (e: Exception) {
+            val errMsg = "Failed to delete note from server: ${e.message}"
+            Log.w("NotesRepository", errMsg, e)
+            throw Exception(errMsg, e)
         }
     }
 
     override suspend fun refreshFromServer() {
-        try {
-            val remoteNotes = api.getNotes()
-            val localDtos = remoteNotes.map { it.toLocalDto() }
-            dao.replaceAll(localDtos)
+        // Fetch remote notes and replace local database; surface network errors to callers
+        val remoteNotes = try {
+            api.getNotes()
         } catch (e: Exception) {
-            Log.v("", e.toString());
-            // Handle network error - could throw custom exception or log
-            // For now, we silently fail and keep local data
+            val errMsg = "Failed to refresh notes from server: ${e.message}"
+            Log.w("NotesRepository", errMsg, e)
+            throw Exception(errMsg, e)
         }
+
+        val localDtos = remoteNotes.map { it.toLocalDto() }
+        dao.replaceAll(localDtos)
     }
 }
-
